@@ -360,12 +360,29 @@ __global__ void CalculateForce(const real_t *velocity,
 	}
 }
 
-// Boundary Sweep for Pressure and Density
-__global__ void BoundarySweep() {
+// Boundary Sweep for pressure
+__global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass,
+							const real_t* position, const real_t d, const u_int nump,
+							const real_t xmax){
+	u_int pid = threadIdx.x+blockIdx.x*blockDim.x;
 
-	// Traverse all the cell and add the effects of pressure near
-	// boundary and density
-	// due to boundary particles
+	bool is_boundary_part[3];
+	real_t riw[3];
+
+	if(pid < nump){
+		u_int vidxp = 3*pid;
+		//Add pressure force if the particle is near the boundary
+		for(int i=0;i<3;i++){
+			riw[i] = xmax-position[vidxp+i];
+			is_boundary_part[i] = (riw[i] < d);
+			force[vidxp+i] += -1.0*static_cast<int>(is_boundary_part[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+
+
+		}
+
+	}
+
+
 
 
 }
