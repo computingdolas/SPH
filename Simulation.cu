@@ -24,7 +24,7 @@
 # define pi 3.14159265358979323846
 
 // User Defined Functions
-const real_t RestDistance(const u_int nump,const real_t volumne) {
+real_t RestDistance(const u_int nump,const real_t volumne) {
 
 	real_t n = nump / volumne ;
 	real_t a = std::cbrt(3.0 / (4 * pi * n )) ;

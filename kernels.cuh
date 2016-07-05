@@ -48,8 +48,8 @@ __device__ real_t norm(const real_t *r){
 
 __device__ real_t W(const real_t re, const real_t r ) {
 
-	const real_t c = ( 315.0 /(64.0 * pi * powi(re,9))) ;
-	const real_t rij = powi(powi(re,2) - powi(r,2),3) ;
+	const real_t c = ( 315.0 /(64.0 * pi * pow(re,9))) ;
+	const real_t rij = pow(pow(re,2) - pow(r,2),3) ;
 	return  (c * rij) ;
 
 }
@@ -57,8 +57,8 @@ __device__ real_t W(const real_t re, const real_t r ) {
 // DeltaW for pressure
 __device__ real_t deltaW(const real_t re, const real_t r){
 
-	const real_t c = ( 45.0/(pi * powi(re,6) * r)) ;
-	const real_t rij = powi(re - r,3) ;
+	const real_t c = ( 45.0/(pi * pow(re,6) * r)) ;
+	const real_t rij = pow(re - r,3) ;
 	return (c * rij) ;
 
 }
@@ -66,7 +66,7 @@ __device__ real_t deltaW(const real_t re, const real_t r){
 // Delta function for viscosity
 __device__ real_t deltaWvis(const real_t re, const real_t r){
 
-	const real_t c = ( 45.0/(pi * powi(re,6))) ;
+	const real_t c = ( 45.0/(pi * pow(re,6))) ;
 	const real_t rij = (re - r) ;
 	return c * rij ;
 }
@@ -163,7 +163,10 @@ __global__ void CalculateDensity(const real_t *mass,
 		real_t pos[3] = {position[vpid],position[vpid+1],position[vpid+2]} ;
 
 		// Find out in which cell it lies
-		int cell_index[3] = {pos[0]/cell_length,pos[1]/cell_length,pos[2]/cell_length };
+		int cell_index[3] = {0} ;
+		cell_index[0] =	pos[0]/cell_length ;
+		cell_index[1] =	pos[1]/cell_length ;
+		cell_index[2] = pos[2]/cell_length ;
 		int cell_id = GetGlobalCellId(cell_index[0],cell_index[1],cell_index[2],numcellx) ;
 
 		u_int nl[26] = {0} ;
@@ -262,7 +265,10 @@ __global__ void CalculateForce(const real_t *velocity,
 		force[vpid+1] = 0.0 ;
 		force[vpid+2] = 0.0 ;
 
-		real_t pos[3] = {position[vpid],position[vpid+1],position[vpid+2]} ;
+		real_t pos[3] = {0} ;
+		pos[0] =  position[vpid] ;
+		pos[1] =  position[vpid+1] ;
+		pos[2] =  position[vpid+2] ;
 
 		// Find out in which cell it lies
 		int cell_index[3] = {pos[0]/cell_length,pos[1]/cell_length,pos[2]/cell_length };
@@ -355,8 +361,8 @@ __global__ void BoundarySweep() {
 }
 
 // Updating velocity ...
-__global__ void velocityUpdate(const real_t *forceold,
-								const real_t *forcenew,
+__global__ void velocityUpdate(const real_t *forceOld,
+								const real_t *forceNew,
 								const real_t *mass,
 								real_t *velocity,
 								const u_int numparticles,
@@ -380,7 +386,7 @@ __global__ void positionUpdate(const real_t *force,
 								const real_t *velocity,
 								const real_t *mass,
 								const u_int num_particles,
-								const real_t deltat,
+								const real_t deltat
 								) {
 
 
@@ -389,10 +395,9 @@ __global__ void positionUpdate(const real_t *force,
 	if (pid < num_particles){
 
 		u_int vpid = pid * 3 ;
-        position[vpid]   += (timestep * velocity[vpid] ) + ( (force[vpid] * timestep * timestep) / ( 2.0 * mass[vpid]) ) ;
-        position[vpid+1] += (timestep * velocity[vpid+1] ) + ( (force[vpid+1] * timestep * timestep) / ( 2.0 * mass[vpid]) ) ;
-        position[vpid+2] += (timestep * velocity[vpid+2] ) + ( (force[vpid+2] * timestep * timestep) / ( 2.0 * mass[vpid]) ) ;
-
+        position[vpid]   += (deltat * velocity[vpid] ) + ( (force[vpid] *  deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
+        position[vpid+1] += (deltat * velocity[vpid+1] ) + ( (force[vpid+1] * deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
+        position[vpid+2] += (deltat * velocity[vpid+2] ) + ( (force[vpid+2] * deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
 	}
 }
 
