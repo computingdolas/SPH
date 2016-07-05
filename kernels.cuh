@@ -271,7 +271,10 @@ __global__ void CalculateForce(const real_t *velocity,
 		pos[2] =  position[vpid+2] ;
 
 		// Find out in which cell it lies
-		int cell_index[3] = {pos[0]/cell_length,pos[1]/cell_length,pos[2]/cell_length };
+		int cell_index[3] = {0} ;
+		cell_index[0] =	pos[0]/cell_length ;
+		cell_index[1] =	pos[1]/cell_length ;
+		cell_index[2] = pos[2]/cell_length ;
 		int cell_id = GetGlobalCellId(cell_index[0],cell_index[1],cell_index[2],numcellx) ;
 
 		u_int nl[26] = {0} ;
@@ -330,7 +333,7 @@ __global__ void CalculateForce(const real_t *velocity,
 					}
 
 					// Find out the norm of relative vector
-					const real_t r = norm(relvec) ;
+					const real_t rnorm = norm(relvec) ;
 
 					// Add contribution to the forces
 					real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
