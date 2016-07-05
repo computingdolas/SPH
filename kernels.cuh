@@ -32,7 +32,10 @@ __device__ u_int GetGlobalCellId(const int i,const int j, const int k, const u_i
 __global__ void InitializeCellList(int *cell_list,const u_int num_cell){
 
 	u_int cdx = GetGlobalId() ;
-	cell_list[cdx] = -1 ;
+
+	if(cdx < num_cell){
+		cell_list[cdx] = -1 ;
+	}
 }
 
 // Calculate the norm
@@ -75,7 +78,9 @@ __device__ real_t deltaWvis(const real_t re, const real_t r){
 __global__ void InitializePartList(int *Particle_list, const u_int numparticles){
 
 	u_int pdx = GetGlobalId();
-	Particle_list[pdx] = pdx ;
+	if(pdx < numparticles){
+		Particle_list[pdx] = pdx ;
+	}
 }
 
 // Update the list
@@ -218,8 +223,10 @@ __global__ void CalculateDensity(const real_t *mass,
 					// Find out the norm of relative vector
 					const real_t r = norm(relvec) ;
 
-					// Add contribution to the density
-					density[pid] += mass[pid]*W(re,r) ;
+					if(r <= re){
+						// Add contribution to the density
+						density[pid] += mass[pid]*W(re,r) ;
+					}
 				}
 			}
 		}
@@ -334,19 +341,19 @@ __global__ void CalculateForce(const real_t *velocity,
 
 					// Find out the norm of relative vector
 					const real_t rnorm = norm(relvec) ;
+					if (rnorm <= re){
+						// Add contribution to the forces
+						real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
+						force[vpid] += -constant * relvec[0] ;
+						force[vpid+1] += -constant * relvec[1] ;
+						force[vpid+2] += -constant * relvec[2] ;
 
-					// Add contribution to the forces
-					real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
-					force[vpid] += -constant * relvec[0] ;
-					force[vpid+1] += -constant * relvec[1] ;
-					force[vpid+2] += -constant * relvec[2] ;
-
-					// Add contribution due to viscosity
-					real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
-					force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
-					force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
-					force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
-
+						// Add contribution due to viscosity
+						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
+						force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
+						force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
+						force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
+					}
 				}
 			}
 		}

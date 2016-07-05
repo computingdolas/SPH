@@ -53,7 +53,7 @@ int main(int argc, char **argv){
     real_t re 	= std::stod(p.params["re"]) ;
 
     // Computing the Cell length
-    const real_t celllength = 2.0 * re / 3.0 ;
+    const real_t celllength = re  ;
     const u_int numcellx = (xmax - xmin) / celllength ;
 
     // Number of particles
