@@ -49,7 +49,8 @@ __device__ real_t norm(const real_t *r){
 
 }
 
-__device__ real_t W(const real_t re, const real_t r ) {
+__device__ real_t W
+(const real_t re, const real_t r ) {
 
 	const real_t c = ( 315.0 /(64.0 * pi * pow(re,9))) ;
 	const real_t rij = pow(pow(re,2) - pow(r,2),3) ;
@@ -363,22 +364,30 @@ __global__ void CalculateForce(const real_t *velocity,
 // Boundary Sweep for pressure
 __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass,
 							const real_t* position, const real_t d, const u_int nump,
-							const real_t xmax){
+                            const  real_t re, const real_t xmax, const u_int numwallp){
 	u_int pid = threadIdx.x+blockIdx.x*blockDim.x;
 
-	bool is_boundary_part[3];
-	real_t riw[3];
+    bool pressure_boundary[3];//boolean array to know if the pressure force because of the boundary should be added
+    bool density_boundary[3];//boolean array to check if the density because of the bopundary should be added
+    real_t riw[3];//contains nearest distance to the boundary along all directions
 
 	if(pid < nump){
 		u_int vidxp = 3*pid;
 		//Add pressure force if the particle is near the boundary
 		for(int i=0;i<3;i++){
-			riw[i] = xmax-position[vidxp+i];
-			is_boundary_part[i] = (riw[i] < d);
-			force[vidxp+i] += -1.0*static_cast<int>(is_boundary_part[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+            if(position[vidxp+i] > xmax/2.0)
+                riw[i] = xmax-position[vidxp+i];
+            else
+                riw[i]  = position[vidxp+i];
 
+            pressure_boundary[i] = (riw[i] < d);
 
-		}
+            density_boundary[i] = (riw[i] < re);
+
+            force[vidxp+i] += -1.0*static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+
+            density[pid] += static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(riw[i]);
+        }
 
 	}
 
