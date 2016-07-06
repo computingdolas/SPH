@@ -58,6 +58,9 @@ public:
 
     // Check Error....//
     void checkError(const cudaError_t err) ;
+
+    // Size
+    const u_int size() ;
 };
 
 template<typename type>
@@ -137,5 +140,12 @@ void cudaDeviceBuffer<type>::checkError(const cudaError_t err){
         std::cout<<cudaGetErrorString(err)<<std::endl ;
         exit(-1) ;
     }
+}
+
+template<typename type>
+const u_int cudaDeviceBuffer<type>::size(){
+
+	return data.size() ;
+
 }
 #endif /* CUDADEVICEBUFFER_H_ */

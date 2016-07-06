@@ -14,6 +14,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <iostream>
+#include <random>
 
 // User Defined Header Files
 #include "cudaDeviceBuffer.h"
@@ -29,6 +30,32 @@ real_t RestDistance(const u_int nump,const real_t volumne) {
 	real_t n = nump / volumne ;
 	real_t a = std::cbrt(3.0 / (4 * pi * n )) ;
 	return 0.893 * a ;
+}
+
+void MaxWellBoltzmannVel(cudaDeviceBuffer<real_t> &vel){
+
+	u_int num_particles = vel.size()/ 3  ;
+	real_t a1,a2,a3,r,s;
+
+	for (u_int p = 0; p < num_particles; ++p) {
+		u_int pindex = p * 3 ;
+
+	    do {
+
+	        a1 = 2.0 * std::rand() / ((double)RAND_MAX + 1.0 ) - 1.0 ;
+	        a2 = 2.0 * std::rand() / ((double)RAND_MAX + 1.0 ) - 1.0 ;
+	        a3 = 2.0 * std::rand() / ((double)RAND_MAX + 1.0 ) - 1.0 ;
+
+	        r = (a1 * a1) + (a2 * a2) + (a3 * a3) ;
+
+	    } while (r >= 1.0);
+
+	    s = std::sqrt(-2.0 * log(r)/r) ;
+
+	    vel[pindex] = a1 *s ;
+	    vel[pindex+1] = a2 *s ;
+	    vel[pindex+2] = a3 *s ;
+	}
 }
 
 int main(int argc, char **argv){

@@ -1,0 +1,15 @@
+name      fluid
+vis_space 2000
+t_start   0.0
+t_end     20.0
+delta_t   0.0001
+x_min     0.0
+y_min     0.0
+z_min     0.0
+x_max     62.5
+y_max     62.5
+z_max     62.5
+r_cut     2.5
+epsilon   5.0e-5
+sigma     1
+boundary  reflective
