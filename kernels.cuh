@@ -208,7 +208,7 @@ __global__ void CalculateDensity(const real_t *mass,
 				real_t rnorm = norm(relvec) ;
 
 				// Add contribution to the density
-				density[pid] += W(re,rnorm) * mass[pid] ;
+				density[pid] += W(re,rnorm) * mass[head_id] ;
 
 			}
 		}
@@ -232,11 +232,11 @@ __global__ void CalculateDensity(const real_t *mass,
 					}
 
 					// Find out the norm of relative vector
-					const real_t r = norm(relvec) ;
+					const real_t rnorm = norm(relvec) ;
 
 					if(r <= re){
 						// Add contribution to the density
-						density[pid] += mass[pid]*W(re,r) ;
+						density[pid] += mass[head_id]*W(re,rnorm) ;
 					}
 				}
 			}
@@ -401,9 +401,6 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
 
 	}
 
-
-
-
 }
 
 // Updating velocity ...
@@ -441,9 +438,9 @@ __global__ void positionUpdate(const real_t *force,
 	if (pid < num_particles){
 
 		u_int vpid = pid * 3 ;
-        position[vpid]   += (deltat * velocity[vpid] ) + ( (force[vpid] *  deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
-        position[vpid+1] += (deltat * velocity[vpid+1] ) + ( (force[vpid+1] * deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
-        position[vpid+2] += (deltat * velocity[vpid+2] ) + ( (force[vpid+2] * deltat * deltat) / ( 2.0 * mass[vpid]) ) ;
+        position[vpid]   += (deltat * velocity[vpid] ) + ( (force[vpid] *  deltat * deltat) / ( 2.0 * mass[pid]) ) ;
+        position[vpid+1] += (deltat * velocity[vpid+1] ) + ( (force[vpid+1] * deltat * deltat) / ( 2.0 * mass[pid]) ) ;
+        position[vpid+2] += (deltat * velocity[vpid+2] ) + ( (force[vpid+2] * deltat * deltat) / ( 2.0 * mass[pid]) ) ;
 	}
 }
 
