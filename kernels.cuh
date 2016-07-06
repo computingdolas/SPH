@@ -28,6 +28,16 @@ __device__ u_int GetGlobalCellId(const int i,const int j, const int k, const u_i
 
 }
 
+//Copy forces
+__global__ void copyForces(real_t *forceold, real_t* forcenew, const u_int nump){
+    u_int pid = GetGlobalId();
+
+    if(pid < nump){
+        forceold[pid*3] = forcenew[pid*3];
+        forceold[pid*3+1] = forcenew[pid*3+1];
+        forceold[pid*3+2] = forcenew[pid*3+2];
+    }
+}
 // Initialize the cell list .. cell parallel
 __global__ void InitializeCellList(int *cell_list,const u_int num_cell){
 

@@ -2,8 +2,8 @@
 #include "Droplet.h"
 
 int main(){
-    Droplet d(2.0,8.0,8.0,8.0,1000,1,5.0,2000);
+    Droplet d(2.0,20.0,20.0,20.0,100,1,5,200);
 
-    d.MakeBubbleAndTank(10.0);
+    d.MakeBubbleAndTank(50.0);
 
 }

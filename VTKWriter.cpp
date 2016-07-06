@@ -7,7 +7,7 @@ VTKWriter::VTKWriter(std::string file_base){
 }
 
 //Output file writer
-void VTKWriter::writeVTKOutput(const cudaDeviceBuffer<real_d> &mass, const cudaDeviceBuffer<real_d> &position, const cudaDeviceBuffer<real_d> &velocity, int num_particles){
+void VTKWriter::writeVTKOutput(const cudaDeviceBuffer<real_t> &mass, const cudaDeviceBuffer<real_t> &position, const cudaDeviceBuffer<real_t> &velocity, int num_particles){
     std::ofstream outfile;
     std::ostringstream file_number_str;
     file_number_str<<this->file_number;

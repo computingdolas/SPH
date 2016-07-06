@@ -11,6 +11,7 @@
 #include "cudaDeviceBuffer.h"
 #include "Parser.h"
 #include "kernels.cuh"
+#include "VTKWriter.h"
 
 // Constants
 # define pi 3.14159265358979323846
@@ -69,6 +70,10 @@ int main(int argc, char **argv){
     real_t zmin = std::stod(p.params["z_min"]);
     real_t zmax = std::stod(p.params["z_max"]);
     real_t re 	= std::stod(p.params["re"]) ;
+    real_t nu = std::stod(p.params["nu"]);
+    real_t k = std::stod(p.params["k"]);
+    real_t restpressure = std::stod(p.params["p0"]);
+    real_t restdensity = std::stod(p.params["rho"]);
 
     // Computing the Cell length
     const real_t celllength = re  ;
@@ -76,6 +81,7 @@ int main(int argc, char **argv){
 
     // Number of particles
     const u_int numparticles = p.num_particles ;
+    real_t d = RestDistance(numparticles,xmax*ymax*zmax);
 
     // Number of Cell
     const u_int numcells = numcellx * numcellx * numcellx ;
@@ -137,7 +143,7 @@ int main(int argc, char **argv){
     const_args.copyToDevice();
     num_cells.copyToDevice();
 
-	// Algorithm to launch
+    // Algorithm to launch real_t d = RestDistance(numparticles,xmax*ymax*zmax);
     // Calculate the number of blocks to launch
     u_int blocks_p,blocks_c,threads_p,threads_c;
     threads_p = threads_per_blocks;
@@ -158,57 +164,68 @@ int main(int argc, char **argv){
         blocks_c  = numparticles/threads_c+1;
     }
 
+    VTKWriter writer(vtk_name);
 	{
 
-		InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcell) ;
+        InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcells) ;
 
 		InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
 
 		UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
 							position.devicePtr,celllength,numparticles,numcellx) ;
 
-		CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-						density.devicePtr,position.devicePtr,re,numparticles,celllength,
-						numcellx) ;
+        //CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+                        //density.devicePtr,position.devicePtr,re,numparticles,celllength,
+                        //numcellx) ;
 
-		CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
-						restpressure,restdensity,k,numparticles) ;
+        //CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+            //			restpressure,restdensity,k,numparticles) ;
 
-		CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-					particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-					density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+        //CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+                //	particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+                //	density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 
 		BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[0],1);
 
-		for (t = 0.0;t<=time_end; t+= timestep_length) {
-
+        int iter=0;
+        for (real_t t = 0.0;t<=time_end && iter==0; t+= timestep_length) {
+            if(iter % vtk_out_freq == 0){
+                // copy to host back
+                forcenew.copyToHost();
+                forceold.copyToHost();
+                position.copyToHost();
+                velocity.copyToHost();
+                writer.writeVTKOutput(mass,position,velocity,numparticles);
+            }
 			positionUpdate<<<blocks_p,threads_p>>>(forcenew.devicePtr,position.devicePtr,velocity.devicePtr,
 					mass.devicePtr,numparticles,timestep_length) ;
 
-			//TODO Copy forces
+            copyForces<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,numparticles);
 
-			InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcell) ;
+            InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcells) ;
 
 			InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
 
 			UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
 								position.devicePtr,celllength,numparticles,numcellx) ;
 
-			CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-							density.devicePtr,position.devicePtr,re,numparticles,celllength,
-							numcellx) ;
+            //CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+                            //density.devicePtr,position.devicePtr,re,numparticles,celllength,
+                        //	numcellx) ;
 
-			CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
-							restpressure,restdensity,k,numparticles) ;
+            //CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+                //			restpressure,restdensity,k,numparticles) ;
 
-			CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-						particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-						density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+            //CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+                    //	particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+                        //density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 			BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
 						position.devicePtr,d,numparticles,re,const_args[0],1);
 
 			velocityUpdate<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,mass.devicePtr,
 					velocity.devicePtr,numparticles,timestep_length);
+
+            iter++;
 
 		}
 	}

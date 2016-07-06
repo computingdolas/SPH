@@ -1,0 +1,17 @@
+time_end            2.0
+part_input_file     bubbleWithTank
+timestep_length     0.01
+vtk_out_freq        1
+vtk_out_name_base   test_out
+cl_workgroup_1dsize   128
+x_min               0
+x_max               50.0
+y_min               0
+y_max               50.0
+z_min               0
+z_max               50.0
+re                  1.0
+nu		    0.001		
+p0		    1.0
+k		    2.0
+rho                 1.0
