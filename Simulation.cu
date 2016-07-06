@@ -164,15 +164,53 @@ int main(int argc, char **argv){
 
 		InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
 
-		UpdateList(cell_list.devicePtr,particle_list.devicePtr,position.devicePtr,celllength,numparticles,numcellx) ;
-		// Density Updation
-		// Pressure Calculation
-		// Force due to pressure
-		// Force to viscosity
-		// Force due to gravity
+		UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
+							position.devicePtr,celllength,numparticles,numcellx) ;
 
-		// Boundary sweep for pressure and viscosity
+		CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+						density.devicePtr,position.devicePtr,re,numparticles,celllength,
+						numcellx) ;
 
+		CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+						restpressure,restdensity,k,numparticles) ;
+
+		CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+					particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+					density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+
+		BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[0],1);
+
+		for (t = 0.0;t<=time_end; t+= timestep_length) {
+
+			positionUpdate<<<blocks_p,threads_p>>>(forcenew.devicePtr,position.devicePtr,velocity.devicePtr,
+					mass.devicePtr,numparticles,timestep_length) ;
+
+			//TODO Copy forces
+
+			InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcell) ;
+
+			InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
+
+			UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
+								position.devicePtr,celllength,numparticles,numcellx) ;
+
+			CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+							density.devicePtr,position.devicePtr,re,numparticles,celllength,
+							numcellx) ;
+
+			CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+							restpressure,restdensity,k,numparticles) ;
+
+			CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+						particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+						density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+			BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
+						position.devicePtr,d,numparticles,re,const_args[0],1);
+
+			velocityUpdate<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,mass.devicePtr,
+					velocity.devicePtr,numparticles,timestep_length);
+
+		}
 	}
 }
 
