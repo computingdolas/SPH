@@ -362,9 +362,9 @@ __global__ void CalculateForce(const real_t *velocity,
 }
 
 // Boundary Sweep for pressure
-__global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass,
-							const real_t* position, const real_t d, const u_int nump,
-                            const  real_t re, const real_t xmax, const u_int numwallp){
+__global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass, const real_t deltat,
+			     const real_t* position, const real_t d, const u_int nump,
+                             const  real_t re, const real_t xmax, const u_int numwallp){
 	u_int pid = threadIdx.x+blockIdx.x*blockDim.x;
 
     bool pressure_boundary[3];//boolean array to know if the pressure force because of the boundary should be added
@@ -386,7 +386,7 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
 
             force[vidxp+i] += -1.0*static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
 
-            density[pid] += static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(riw[i]);
+            density[pid] += static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
         }
 
 	}
