@@ -9,7 +9,4 @@ z_min     0.0
 x_max     62.5
 y_max     62.5
 z_max     62.5
-r_cut     2.5
-epsilon   5.0e-5
-sigma     1
-boundary  reflective
+re        2.5
