@@ -123,6 +123,7 @@ int main(int argc, char **argv){
     mass.allocateOnDevice();
     position.allocateOnDevice();
     velocity.allocateOnDevice();
+    pressure.allocateOnDevice() ;
     density.allocateOnDevice() ;
     forceold.allocateOnDevice();
     forcenew.allocateOnDevice();
@@ -135,6 +136,7 @@ int main(int argc, char **argv){
     mass.copyToDevice();
     position.copyToDevice();
     velocity.copyToDevice();
+    pressure.copyToDevice();
     density.copyToDevice() ;
     forceold.copyToDevice();
     forcenew.copyToDevice();
