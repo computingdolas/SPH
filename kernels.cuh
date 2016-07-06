@@ -90,7 +90,7 @@ __global__ void UpdateList(int * cell_list,
 							const real_t *position,
 							const real_t cell_length,
 							const u_int num_particles,
-							const u_int num_cell){
+							const u_int num_cellx){
 
 	u_int id = GetGlobalId() ;
 
@@ -108,7 +108,7 @@ __global__ void UpdateList(int * cell_list,
 		u_int k = pos[2] / cell_length ;
 
 		// Find the global cell id
-		u_int cell_index  = GetGlobalCellId(i,j,k,num_cell) ;
+		u_int cell_index  = GetGlobalCellId(i,j,k,num_cellx) ;
 
 		//Register the particle in linked list
 		int old = atomicExch(&cell_list[cell_index],id) ;

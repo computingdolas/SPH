@@ -143,7 +143,7 @@ void cudaDeviceBuffer<type>::checkError(const cudaError_t err){
 }
 
 template<typename type>
- u_int cudaDeviceBuffer<type>::size(){
+u_int cudaDeviceBuffer<type>::size(){
 
 	return data.size() ;
 

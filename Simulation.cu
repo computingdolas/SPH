@@ -159,8 +159,12 @@ int main(int argc, char **argv){
     }
 
 	{
-    	// Cell Discretization
 
+		InitializeCellList<<<blocks_c,threads_c>>>(cell_list.devicePtr,numcell) ;
+
+		InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
+
+		UpdateList(cell_list.devicePtr,particle_list.devicePtr,position.devicePtr,celllength,numparticles,numcellx) ;
 		// Density Updation
 		// Pressure Calculation
 		// Force due to pressure
