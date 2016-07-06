@@ -1,13 +1,4 @@
 
-/**
- * Copyright 1993-2012 NVIDIA Corporation.  All rights reserved.
- *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -148,10 +139,28 @@ int main(int argc, char **argv){
 
 	// Algorithm to launch
     // Calculate the number of blocks to launch
-    u_int numblocks  ;
+    u_int blocks_p,blocks_c,threads_p,threads_c;
+    threads_p = threads_per_blocks;
+    threads_c = threads_per_blocks;
+
+    if(numparticles%threads_per_blocks == 0){
+        blocks_p = numparticles/threads_p;
+    }
+    else{
+        blocks_p  = numparticles/threads_p+1;
+    }
+
+
+    if(numcells%threads_per_blocks){
+        blocks_c = numcells/threads_c;
+    }
+    else{
+        blocks_c  = numparticles/threads_c+1;
+    }
 
 	{
     	// Cell Discretization
+
 		// Density Updation
 		// Pressure Calculation
 		// Force due to pressure
