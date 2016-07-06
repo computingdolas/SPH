@@ -31,8 +31,8 @@ private:
 
 public:
 
-	Droplet(const real_t _radius , const real_t _xcenter,const real_t z_center,
-			const real_t _ycenter, const u_int _bubbleparticles,
+    Droplet(const real_t _radius , const real_t _xcenter,const real_t _ycenter,
+            const real_t _zcenter, const u_int _bubbleparticles,
 			const u_int _numbubbles,const u_int _tankheight,const u_int _tankparticles ) ;
 
 	~Droplet() ;
@@ -66,9 +66,9 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 	real_t dist = (domlen-(2.0 * offset))/(std::sqrt(numpx)-1) ;
 
 	// For the tank
-	for (varz = 0; varz < tank_height; ++varz) {
-		for (vary = 0; vary < numpx; ++vary) {
-			for (varx = 0; varx < numpx; ++varx) {
+    for (u_int varz = 0; varz < tank_height; ++varz) {
+        for (u_int vary = 0; vary < numpx; ++vary) {
+            for (u_int varx = 0; varx < numpx; ++varx) {
 				out<<mass<<" "<<varx * offset + offset<<" "<<vary * offset + offset<<" "<<vary * offset + offset<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
 			}
 		}
@@ -76,7 +76,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 
 	// for the bubble
 	real_t a1,a2,a3,r;
-	for (drop = 0; drop < num_bubbles; ++drop) {
+    for (u_int drop = 0; drop < num_bubbles; ++drop) {
 
 		do {
 
