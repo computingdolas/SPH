@@ -98,7 +98,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 		a1 = a1 * s * radius ;
 		a2 = a2 * s * radius ;            
 		a3 = a3 * s * radius ;
-        out<<mass<<" "<<a1+x_center<<" "<<a2+ y_center<<" "<<a3+z_center<<" "<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
+        out<<mass<<" "<<a1+x_center<<" "<<a2+ y_center<<" "<<a3+z_center<<" "<<"0"<<" "<<"0"<<" "<<-10<<std::endl ;
         ++iter ; 
         a1 = a2 = a3 = r = 0.0 ; 
 	}

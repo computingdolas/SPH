@@ -177,7 +177,7 @@ __global__ void CalculateDensity(const real_t *mass,
 
 	if (pid  < num_particles) {
 
-		density[pid] = 0.0 ;
+        density[pid] = 1.0 ;
 		u_int vpid = pid * 3 ;
 		real_t pos[3] = {position[vpid],position[vpid+1],position[vpid+2]} ;
 
@@ -251,7 +251,7 @@ __global__ void CalculateDensity(const real_t *mass,
 
         }
 
-        if(density[pid] == 0.0) printf("Density 0 hai\n");
+      //  if(density[pid] == 0.0) printf("Density 0 hai\n");
     }
 }
 
@@ -391,6 +391,7 @@ __global__ void CalculateForce(const real_t *velocity,
         else
             n = nl[temp] ;
       }
+
     }
 }
 
@@ -422,7 +423,7 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
 
             density_boundary[i] = (riw[i] < re);
 
-            fcont *= static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+            fcont *= 0.0001*static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
             force[vidxp+i] += fcont;
            //if(position[vidxp+i] >= 45.0) printf("%f %f %d %f %f\n",fcont,position[vidxp+i],pressure_boundary[i],riw[i],d);
 
