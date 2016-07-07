@@ -145,7 +145,6 @@ int main(int argc, char **argv){
     const_args.copyToDevice();
     num_cells.copyToDevice();
 
-    // Algorithm to launch real_t d = RestDistance(numparticles,xmax*ymax*zmax);
     // Calculate the number of blocks to launch
     u_int blocks_p,blocks_c,threads_p,threads_c;
     threads_p = threads_per_blocks;
@@ -176,18 +175,18 @@ int main(int argc, char **argv){
 		UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
 							position.devicePtr,celllength,numparticles,numcellx) ;
 
-        //CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-                        //density.devicePtr,position.devicePtr,re,numparticles,celllength,
-                        //numcellx) ;
+        CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+                        density.devicePtr,position.devicePtr,re,numparticles,celllength,
+                         numcellx) ;
 
-        //CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
-            //			restpressure,restdensity,k,numparticles) ;
+        CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+                        restpressure,restdensity,k,numparticles) ;
 
-        //CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-                //	particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-                //	density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+       CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+                    particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+                    density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 
-		BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[0],1);
+    BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[0],1);
 
         int iter=0;
         for (real_t t = 0.0;t<=time_end && iter==0; t+= timestep_length) {
@@ -211,16 +210,16 @@ int main(int argc, char **argv){
 			UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
 								position.devicePtr,celllength,numparticles,numcellx) ;
 
-            //CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-                            //density.devicePtr,position.devicePtr,re,numparticles,celllength,
-                        //	numcellx) ;
+            CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
+                            density.devicePtr,position.devicePtr,re,numparticles,celllength,
+                            numcellx) ;
 
-            //CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
-                //			restpressure,restdensity,k,numparticles) ;
+            CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
+                            restpressure,restdensity,k,numparticles) ;
 
-            //CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-                    //	particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-                        //density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+            CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+                    particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+                        density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 			BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
 						position.devicePtr,d,numparticles,re,const_args[0],1);
 
@@ -228,8 +227,7 @@ int main(int argc, char **argv){
 					velocity.devicePtr,numparticles,timestep_length);
 
             iter++;
-
-		}
+        }
 	}
 }
 

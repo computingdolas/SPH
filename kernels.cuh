@@ -113,8 +113,8 @@ __global__ void UpdateList(int * cell_list,
 		real_t pos[3] = {position[pid],position[pid+1],position[pid+2]} ;
 
 		// Find the 3D index of the cell in which it lies in
-		u_int i = pos[0] / cell_length ;
-		u_int j = pos[1] / cell_length ;
+        u_int i = pos[0]  / cell_length ;
+        u_int j = pos[1]  / cell_length ;
 		u_int k = pos[2] / cell_length ;
 
 		// Find the global cell id
@@ -208,15 +208,16 @@ __global__ void CalculateDensity(const real_t *mass,
 				real_t rnorm = norm(relvec) ;
 
 				// Add contribution to the density
-				density[pid] += W(re,rnorm) * mass[head_id] ;
+                //density[pid] += W(re,rnorm) * mass[head_id] ;
 
 			}
 		}
 
 		// Traversing the NeighbourHood cell
 		u_int temp = 0 ;
-		for (u_int n = nl[temp]; n!= cell_id;++temp){
-			for (int head_id = cell_list[n]; head_id !=-1; head_id = particle_list[head_id]) {
+        u_int n = nl[temp] ;
+        while (n != cell_id){
+            for (int head_id = cell_list[n]; head_id !=-1; head_id = particle_list[head_id]) {
 				if (head_id != pid){
 
 					// find out the index of the particle
@@ -234,14 +235,16 @@ __global__ void CalculateDensity(const real_t *mass,
 					// Find out the norm of relative vector
 					const real_t rnorm = norm(relvec) ;
 
-					if(r <= re){
+					if(rnorm <= re){
 						// Add contribution to the density
-						density[pid] += mass[head_id]*W(re,rnorm) ;
+                        //density[pid] += mass[head_id]*W(re,rnorm) ;
 					}
 				}
-			}
-		}
-	}
+            }
+            ++temp ;
+            n = nl[temp];
+        }
+    }
 }
 
 //Calculate the pressure for each particle
@@ -290,9 +293,11 @@ __global__ void CalculateForce(const real_t *velocity,
 
 		// Find out in which cell it lies
 		int cell_index[3] = {0} ;
+
 		cell_index[0] =	pos[0]/cell_length ;
 		cell_index[1] =	pos[1]/cell_length ;
 		cell_index[2] = pos[2]/cell_length ;
+
 		int cell_id = GetGlobalCellId(cell_index[0],cell_index[1],cell_index[2],numcellx) ;
 
 		u_int nl[26] = {0} ;
@@ -334,9 +339,10 @@ __global__ void CalculateForce(const real_t *velocity,
 
 		// Traversing the NeighbourHood cell
 		u_int temp = 0 ;
-		for (u_int n = nl[temp]; n!= cell_id;++temp){
+        u_int n = nl[temp] ;
+        while (n != cell_id){
 			for (int head_id = cell_list[n]; head_id !=-1; head_id = particle_list[head_id]) {
-				if (head_id != pid){
+                if (head_id != pid){
 
 					// find out the index of the particle
 					u_int nvpid = head_id * 3 ;
@@ -352,24 +358,29 @@ __global__ void CalculateForce(const real_t *velocity,
 
 					// Find out the norm of relative vector
 					const real_t rnorm = norm(relvec) ;
-					if (rnorm <= re){
-						// Add contribution to the forces
+
+                    if (rnorm <= re){
+
+                        // Add contribution to the forces
 						real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
-						force[vpid] += -constant * relvec[0] ;
-						force[vpid+1] += -constant * relvec[1] ;
-						force[vpid+2] += -constant * relvec[2] ;
+                        force[vpid]     +=  -constant * relvec[0] ;
+                        force[vpid+1] +=  -constant * relvec[1] ;
+                        force[vpid+2] +=  -constant * relvec[2] ;
 
 						// Add contribution due to viscosity
 						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
-						force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
-						force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
-						force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
-					}
-				}
-			}
-		}
-	}
+                        //force[vpid]     += constantvis * (velocity[nvpid] - velocity[vpid]) ;
+                        force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
+                        force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
+                    }
+                }
+            }
+        ++temp ;
+        n = nl[temp] ;
+        }
+    }
 }
+
 
 // Boundary Sweep for pressure
 __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass, const real_t deltat,

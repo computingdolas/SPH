@@ -56,30 +56,33 @@ Droplet::~Droplet(){
 void Droplet::MakeBubbleAndTank(const real_t domlen){
 
 	std::ofstream out ;
-	out.open("bubbleWithTank") ;
+	out.open("bubbleWithTank.dat") ;
 
 	real_t mass  = 1;
 	real_t vel = 0.0 ;
 	real_t offset = 0.5 ;
 
     u_int numpxy = tank_particles / tank_height ;
+
     real_t dist = (domlen-(2.0 * offset))/(std::sqrt(numpxy)-1) ;
     u_int numpx = std::sqrt(numpxy) ;
-	out<<bubble_particles+tank_particles<<std::endl;
+    out<<bubble_particles+tank_particles<<std::endl;
 
+    u_int iter = 0 ; 
 	// For the tank
     for (u_int varz = 0; varz < tank_height; ++varz) {
         for (u_int vary = 0; vary < numpx; ++vary) {
             for (u_int varx = 0; varx < numpx; ++varx) {
                 out<<mass<<" "<<varx * dist + offset<<" "<<vary * dist + offset<<" "<<varz * dist + offset<<" "<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
+                ++iter ; 
 			}
 		}
 	}
 
+	iter = 0 ; 
 	// for the bubble
-	real_t a1,a2,a3,r;
-    for (u_int drop = 0; drop < num_bubbles; ++drop) {
-
+	real_t a1,a2,a3,r,s;
+    for (u_int drop = 0; drop < bubble_particles; ++drop) {
 		do {
 
 	        a1 = 2.0 * std::rand() / ((double)RAND_MAX + 1.0 ) - 1.0 ;
@@ -90,12 +93,16 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 
 	    } while (r >= 1.0);
 
-		a1 *= radius ;
-		a2 *= radius ;            
-		a3 *= radius ;
+		s = std::sqrt(-2.0 * log(r)/r) ;
 
+		a1 = a1 * s * radius ;
+		a2 = a2 * s * radius ;            
+		a3 = a3 * s * radius ;
         out<<mass<<" "<<a1+x_center<<" "<<a2+ y_center<<" "<<a3+z_center<<" "<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
+        ++iter ; 
+        a1 = a2 = a3 = r = 0.0 ; 
 	}
+
 	out.close();
 }
 
