@@ -117,9 +117,9 @@ __global__ void UpdateList(int * cell_list,
         u_int j = pos[1]  / cell_length ;
 		u_int k = pos[2] / cell_length ;
 
+       // printf("%f %f %f\n",pos[0],pos[1],pos[2]);
 		// Find the global cell id
 		u_int cell_index  = GetGlobalCellId(i,j,k,num_cellx) ;
-
 		//Register the particle in linked list
 		int old = atomicExch(&cell_list[cell_index],id) ;
 		particle_list[id] = old ;
@@ -137,8 +137,8 @@ __device__ void findNeighbour(const u_int xindex,
 
 	u_int count = 0 ;
 	for (int i = -1	; i <=1; ++i) {
-		for(int j =-1 ; j <=2 ; ++j ){
-			for (int k = -1 ; k <=2 ; ++k){
+        for(int j =-1 ; j <=1 ; ++j ){
+            for (int k = -1 ; k <=1 ; ++k){
 				if (i != 0 || j != 0 || k !=0) {
 					tempx 	=  (int)xindex + i ;
 					tempy 	=  (int)yindex + j ;
@@ -155,7 +155,10 @@ __device__ void findNeighbour(const u_int xindex,
 			}
 		}
 	}
-	neighbour_list[count] = GetGlobalCellId(xindex, yindex, zindex,numcellx);
+
+    if(count < 26){
+        neighbour_list[count] = GetGlobalCellId(xindex, yindex, zindex,numcellx);
+    }
 }
 
 // Calculate the density
@@ -185,13 +188,12 @@ __global__ void CalculateDensity(const real_t *mass,
 		cell_index[2] = pos[2]/cell_length ;
 		int cell_id = GetGlobalCellId(cell_index[0],cell_index[1],cell_index[2],numcellx) ;
 
-		u_int nl[26] = {0} ;
+        u_int nl[26] = {0} ;
 		findNeighbour(cell_index[0],cell_index[1],cell_index[2],numcellx,nl) ;
 
 		// Traversing the own cell
 		for (int head_id = cell_list[cell_id]; head_id !=-1	; head_id = particle_list[head_id]) {
 			if (head_id != pid){
-
 				// find out the index of the particle
 				u_int nvpid = head_id * 3 ;
 
@@ -208,13 +210,13 @@ __global__ void CalculateDensity(const real_t *mass,
 				real_t rnorm = norm(relvec) ;
 
 				// Add contribution to the density
-                //density[pid] += W(re,rnorm) * mass[head_id] ;
+                density[pid] += W(re,rnorm) * mass[head_id] ;
 
 			}
 		}
 
 		// Traversing the NeighbourHood cell
-		u_int temp = 0 ;
+        u_int temp = 0 ;
         u_int n = nl[temp] ;
         while (n != cell_id){
             for (int head_id = cell_list[n]; head_id !=-1; head_id = particle_list[head_id]) {
@@ -237,13 +239,19 @@ __global__ void CalculateDensity(const real_t *mass,
 
 					if(rnorm <= re){
 						// Add contribution to the density
-                        //density[pid] += mass[head_id]*W(re,rnorm) ;
+                        density[pid] += mass[head_id]*W(re,rnorm) ;
 					}
 				}
             }
             ++temp ;
-            n = nl[temp];
+            if(temp == 26)
+                break;
+            else
+                n = nl[temp];
+
         }
+
+        if(density[pid] == 0.0) printf("Density 0 hai\n");
     }
 }
 
@@ -330,6 +338,7 @@ __global__ void CalculateForce(const real_t *velocity,
 
 				// Add contribution due to viscosity
 				real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
+
 				force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
 				force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
 				force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
@@ -338,7 +347,7 @@ __global__ void CalculateForce(const real_t *velocity,
 		}
 
 		// Traversing the NeighbourHood cell
-		u_int temp = 0 ;
+        u_int temp = 0 ;
         u_int n = nl[temp] ;
         while (n != cell_id){
 			for (int head_id = cell_list[n]; head_id !=-1; head_id = particle_list[head_id]) {
@@ -369,15 +378,19 @@ __global__ void CalculateForce(const real_t *velocity,
 
 						// Add contribution due to viscosity
 						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
-                        //force[vpid]     += constantvis * (velocity[nvpid] - velocity[vpid]) ;
+
+                        force[vpid]     += constantvis * (velocity[nvpid] - velocity[vpid]) ;
                         force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
                         force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
                     }
                 }
             }
         ++temp ;
-        n = nl[temp] ;
-        }
+        if(temp == 26)
+            break;
+        else
+            n = nl[temp] ;
+      }
     }
 }
 
@@ -392,22 +405,29 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
     bool density_boundary[3];//boolean array to check if the density because of the bopundary should be added
     real_t riw[3];//contains nearest distance to the boundary along all directions
 
+    real_t fcont,dcont;
 	if(pid < nump){
 		u_int vidxp = 3*pid;
 		//Add pressure force if the particle is near the boundary
 		for(int i=0;i<3;i++){
-            if(position[vidxp+i] > xmax/2.0)
+            if(position[vidxp+i] > xmax/2.0){
+                fcont = -1.0;
                 riw[i] = xmax-position[vidxp+i];
-            else
+            }
+            else{
+                fcont = 1.0;
                 riw[i]  = position[vidxp+i];
-
+            }
             pressure_boundary[i] = (riw[i] < d);
 
             density_boundary[i] = (riw[i] < re);
 
-            force[vidxp+i] += -1.0*static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+            fcont *= static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+            force[vidxp+i] += fcont;
+           //if(position[vidxp+i] >= 45.0) printf("%f %f %d %f %f\n",fcont,position[vidxp+i],pressure_boundary[i],riw[i],d);
 
-            density[pid] += static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
+            dcont = static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
+            density[pid] += dcont;
         }
 
 	}
@@ -452,6 +472,7 @@ __global__ void positionUpdate(const real_t *force,
         position[vpid]   += (deltat * velocity[vpid] ) + ( (force[vpid] *  deltat * deltat) / ( 2.0 * mass[pid]) ) ;
         position[vpid+1] += (deltat * velocity[vpid+1] ) + ( (force[vpid+1] * deltat * deltat) / ( 2.0 * mass[pid]) ) ;
         position[vpid+2] += (deltat * velocity[vpid+2] ) + ( (force[vpid+2] * deltat * deltat) / ( 2.0 * mass[pid]) ) ;
+
 	}
 }
 

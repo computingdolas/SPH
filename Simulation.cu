@@ -82,7 +82,7 @@ int main(int argc, char **argv){
     // Number of particles
     const u_int numparticles = p.num_particles ;
     real_t d = RestDistance(numparticles,xmax*ymax*zmax);
-
+    printf("Rest distance is %f\n",d);
     // Number of Cell
     const u_int numcells = numcellx * numcellx * numcellx ;
 
@@ -176,20 +176,19 @@ int main(int argc, char **argv){
 							position.devicePtr,celllength,numparticles,numcellx) ;
 
         CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-                        density.devicePtr,position.devicePtr,re,numparticles,celllength,
-                         numcellx) ;
+                       density.devicePtr,position.devicePtr,re,numparticles,celllength,numcellx) ;
 
         CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
                         restpressure,restdensity,k,numparticles) ;
 
-       CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-                    particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-                    density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+        CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
+                                              particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,density.devicePtr,
+                                              position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 
-    BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[0],1);
+        BoundarySweep<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[1],1);
 
         int iter=0;
-        for (real_t t = 0.0;t<=time_end && iter==0; t+= timestep_length) {
+        for (real_t t = 0.0;t<=time_end; t+= timestep_length) {
             if(iter % vtk_out_freq == 0){
                 // copy to host back
                 forcenew.copyToHost();
@@ -207,19 +206,18 @@ int main(int argc, char **argv){
 
 			InitializePartList<<<blocks_p,threads_p>>>(particle_list.devicePtr,numparticles) ;
 
-			UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
-								position.devicePtr,celllength,numparticles,numcellx) ;
+            UpdateList<<<blocks_p,threads_p>>>(cell_list.devicePtr,particle_list.devicePtr,
+                                    position.devicePtr,celllength,numparticles,numcellx) ;
 
             CalculateDensity<<<blocks_p,threads_p >>>(mass.devicePtr,cell_list.devicePtr,particle_list.devicePtr,
-                            density.devicePtr,position.devicePtr,re,numparticles,celllength,
-                            numcellx) ;
+                            density.devicePtr,position.devicePtr,re,numparticles,celllength,numcellx) ;
 
             CalculatePressure<<<blocks_p,threads_p>>>(pressure.devicePtr,density.devicePtr,
                             restpressure,restdensity,k,numparticles) ;
 
             CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
-                    particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-                        density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+                          particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
+                          density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 			BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
 						position.devicePtr,d,numparticles,re,const_args[0],1);
 
