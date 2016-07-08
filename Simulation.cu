@@ -101,6 +101,7 @@ int main(int argc, char **argv){
 
     // Fill the buffers from Initial list
     p.fillBuffers(mass,velocity,position) ;
+
 	// Velocity according to Maxwell Boltzmann distribution
 
     //Filling in the host data for the constant arguments
@@ -185,8 +186,7 @@ int main(int argc, char **argv){
                                               particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,density.devicePtr,
                                               position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 
-        BoundarySweep<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[1],1);
-
+        //BoundarySweep<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[1],1);
         int iter=0;
         for (real_t t = 0.0;t<=time_end; t+= timestep_length) {
             if(iter % vtk_out_freq == 0){
@@ -218,10 +218,10 @@ int main(int argc, char **argv){
             CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
                           particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
                           density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
-			BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
-						position.devicePtr,d,numparticles,re,const_args[0],1);
+           // BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
+                      //  position.devicePtr,d,numparticles,re,const_args[0],1);
 
-			velocityUpdate<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,mass.devicePtr,
+            velocityUpdate<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,mass.devicePtr,
 					velocity.devicePtr,numparticles,timestep_length);
 
             iter++;

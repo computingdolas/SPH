@@ -60,11 +60,12 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 
 	real_t mass  = 1;
 	real_t vel = 0.0 ;
-	real_t offset = 0.5 ;
+	real_t offset = 50 ;
 
     u_int numpxy = tank_particles / tank_height ;
 
-    real_t dist = (domlen-(2.0 * offset))/(std::sqrt(numpxy)-1) ;
+    real_t dist = (domlen)/(std::sqrt(numpxy)-1) ;
+    std::cout<<"The distance between particles"<<dist<<std::endl  ;
     u_int numpx = std::sqrt(numpxy) ;
     out<<bubble_particles+tank_particles<<std::endl;
 
@@ -78,7 +79,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 			}
 		}
 	}
-
+    /*
 	iter = 0 ; 
 	// for the bubble
 	real_t a1,a2,a3,r,s;
@@ -102,7 +103,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
         ++iter ; 
         a1 = a2 = a3 = r = 0.0 ; 
 	}
-
+        */
 	out.close();
 }
 

@@ -104,6 +104,7 @@ __global__ void UpdateList(int * cell_list,
 
 	u_int id = GetGlobalId() ;
 
+
 	if (id < num_particles){
 
 		// Find the index of the particles
@@ -332,9 +333,9 @@ __global__ void CalculateForce(const real_t *velocity,
 
 				// Add contribution to the forces due to pressure
 				real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id])/ (2 * density[head_id])) * deltaW(re,rnorm) ;
-				force[vpid] += -constant * relvec[0] ;
-				force[vpid+1] += -constant * relvec[1] ;
-				force[vpid+2] += -constant * relvec[2] ;
+                //force[vpid] += -constant * relvec[0] ;
+                //force[vpid+1] += -constant * relvec[1] ;
+                //force[vpid+2] += -constant * relvec[2] ;
 
 				// Add contribution due to viscosity
 				real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
@@ -372,9 +373,9 @@ __global__ void CalculateForce(const real_t *velocity,
 
                         // Add contribution to the forces
 						real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
-                        force[vpid]     +=  -constant * relvec[0] ;
-                        force[vpid+1] +=  -constant * relvec[1] ;
-                        force[vpid+2] +=  -constant * relvec[2] ;
+                        //force[vpid]     +=  -constant * relvec[0] ;
+                        //force[vpid+1] +=  -constant * relvec[1] ;
+                        //force[vpid+2] +=  -constant * relvec[2] ;
 
 						// Add contribution due to viscosity
 						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
@@ -423,11 +424,11 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
 
             density_boundary[i] = (riw[i] < re);
 
-            fcont *= 0.0001*static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
+            fcont *= static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
             force[vidxp+i] += fcont;
            //if(position[vidxp+i] >= 45.0) printf("%f %f %d %f %f\n",fcont,position[vidxp+i],pressure_boundary[i],riw[i],d);
 
-            dcont = static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
+            dcont = 0.0001*static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
             density[pid] += dcont;
         }
 
