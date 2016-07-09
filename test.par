@@ -1,7 +1,7 @@
-time_end            5.0
+time_end            9.50
 part_input_file     bubbleWithTank.dat
-timestep_length     0.01
-vtk_out_freq        1
+timestep_length     0.002
+vtk_out_freq        50
 vtk_out_name_base   test_out
 cl_workgroup_1dsize 128
 x_min               0
@@ -11,7 +11,9 @@ y_max               100.0
 z_min               0
 z_max               100.0
 re                  1.0
-nu		    5		
+nu		    0.5		
 p0		    1.0
-k		    0.240
+k		    1.5
 rho                 1.0
+stiffness	    3000.0
+damping             30.0

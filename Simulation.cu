@@ -74,6 +74,8 @@ int main(int argc, char **argv){
     real_t k = std::stod(p.params["k"]);
     real_t restpressure = std::stod(p.params["p0"]);
     real_t restdensity = std::stod(p.params["rho"]);
+    real_t stiffness = std::stod(p.params["stiffness"]);
+    real_t damping =  std::stod(p.params["damping"]);
 
     // Computing the Cell length
     const real_t celllength = re  ;
@@ -187,6 +189,9 @@ int main(int argc, char **argv){
                                               position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
 
         //BoundarySweep<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[1],1);
+        BoundarySweepSD<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,position.devicePtr,mass.devicePtr,\
+                                                d,numparticles,velocity.devicePtr,re,xmax,stiffness,damping);
+
         int iter=0;
         for (real_t t = 0.0;t<=time_end; t+= timestep_length) {
             if(iter % vtk_out_freq == 0){
@@ -220,6 +225,8 @@ int main(int argc, char **argv){
                           density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
            // BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
                       //  position.devicePtr,d,numparticles,re,const_args[0],1);
+            BoundarySweepSD<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,position.devicePtr,mass.devicePtr,\
+                                                    d,numparticles,velocity.devicePtr,re,xmax,stiffness,damping);
 
             velocityUpdate<<<blocks_p,threads_p>>>(forceold.devicePtr,forcenew.devicePtr,mass.devicePtr,
 					velocity.devicePtr,numparticles,timestep_length);

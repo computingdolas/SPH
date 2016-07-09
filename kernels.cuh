@@ -271,6 +271,7 @@ __global__ void CalculatePressure(real_t *pressure ,
 	}
 }
 
+
 // Calculate the Force due to pressure and viscosity
 __global__ void CalculateForce(const real_t *velocity,
 								real_t * force,
@@ -333,9 +334,9 @@ __global__ void CalculateForce(const real_t *velocity,
 
 				// Add contribution to the forces due to pressure
 				real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id])/ (2 * density[head_id])) * deltaW(re,rnorm) ;
-                //force[vpid] += -constant * relvec[0] ;
-                //force[vpid+1] += -constant * relvec[1] ;
-                //force[vpid+2] += -constant * relvec[2] ;
+                force[vpid] += -constant * relvec[0] ;
+                force[vpid+1] += -constant * relvec[1] ;
+                force[vpid+2] += -constant * relvec[2] ;
 
 				// Add contribution due to viscosity
 				real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
@@ -373,9 +374,9 @@ __global__ void CalculateForce(const real_t *velocity,
 
                         // Add contribution to the forces
 						real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
-                        //force[vpid]     +=  -constant * relvec[0] ;
-                        //force[vpid+1] +=  -constant * relvec[1] ;
-                        //force[vpid+2] +=  -constant * relvec[2] ;
+                        force[vpid]     +=  -constant * relvec[0] ;
+                        force[vpid+1] +=  -constant * relvec[1] ;
+                        force[vpid+2] +=  -constant * relvec[2] ;
 
 						// Add contribution due to viscosity
 						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
@@ -397,21 +398,22 @@ __global__ void CalculateForce(const real_t *velocity,
 }
 
 
-// Boundary Sweep for pressure
-__global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass, const real_t deltat,
-			     const real_t* position, const real_t d, const u_int nump,
-                             const  real_t re, const real_t xmax, const u_int numwallp){
-	u_int pid = threadIdx.x+blockIdx.x*blockDim.x;
+
+__global__ void BoundarySweepSD(real_t *force, real_t * density, const real_t* position,\
+                                const real_t *mass, const real_t d, const u_int nump, const real_t *velocity,\
+                                const real_t re, const real_t xmax,const real_t stiffness, const real_t damping){
+
+    u_int pid = threadIdx.x+blockIdx.x*blockDim.x;
 
     bool pressure_boundary[3];//boolean array to know if the pressure force because of the boundary should be added
     bool density_boundary[3];//boolean array to check if the density because of the bopundary should be added
     real_t riw[3];//contains nearest distance to the boundary along all directions
 
-    real_t fcont,dcont;
-	if(pid < nump){
-		u_int vidxp = 3*pid;
-		//Add pressure force if the particle is near the boundary
-		for(int i=0;i<3;i++){
+    real_t fcont,dcont,ftemp=0.0;
+    if(pid < nump){
+        u_int vidxp = 3*pid;
+        //Add pressure force if the particle is near the boundary
+        for(int i=0;i<3;i++){
             if(position[vidxp+i] > xmax/2.0){
                 fcont = -1.0;
                 riw[i] = xmax-position[vidxp+i];
@@ -424,16 +426,14 @@ __global__ void BoundarySweep(real_t *force, real_t *density, const real_t *mass
 
             density_boundary[i] = (riw[i] < re);
 
-            fcont *= static_cast<int>(pressure_boundary[i])*mass[pid]*(d-riw[i])/(deltat*deltat);
-            force[vidxp+i] += fcont;
-           //if(position[vidxp+i] >= 45.0) printf("%f %f %d %f %f\n",fcont,position[vidxp+i],pressure_boundary[i],riw[i],d);
-
-            dcont = 0.0001*static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*numwallp*W(re,riw[i]);
+            dcont = static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*W(re,riw[i]);
             density[pid] += dcont;
+
+            ftemp =  pressure_boundary[i]*(fcont*stiffness*(d-riw[i])-damping*velocity[i]);
+            force[vidxp+i] += ftemp;
+            if(ftemp != 0.0) printf("%f\n",ftemp);
         }
-
-	}
-
+    }
 }
 
 // Updating velocity ...

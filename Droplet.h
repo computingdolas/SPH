@@ -60,7 +60,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
 
 	real_t mass  = 1;
 	real_t vel = 0.0 ;
-	real_t offset = 50 ;
+    real_t offset =50.0 ;
 
     u_int numpxy = tank_particles / tank_height ;
 
@@ -74,7 +74,7 @@ void Droplet::MakeBubbleAndTank(const real_t domlen){
     for (u_int varz = 0; varz < tank_height; ++varz) {
         for (u_int vary = 0; vary < numpx; ++vary) {
             for (u_int varx = 0; varx < numpx; ++varx) {
-                out<<mass<<" "<<varx * dist + offset<<" "<<vary * dist + offset<<" "<<varz * dist + offset<<" "<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
+                out<<mass<<" "<<varx * dist + offset<<" "<<vary * dist + offset<<" "<<varz * dist + offset<<" "<<"0"<<" "<<"0"<<" "<<"-10.0"<<std::endl ;
                 ++iter ; 
 			}
 		}
