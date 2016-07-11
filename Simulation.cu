@@ -76,6 +76,8 @@ int main(int argc, char **argv){
     real_t restdensity = std::stod(p.params["rho"]);
     real_t stiffness = std::stod(p.params["stiffness"]);
     real_t damping =  std::stod(p.params["damping"]);
+    real_t d = std::stod(p.params["d"]);
+    real_t sigma = std::stod(p.params["sigma"]);
 
     // Computing the Cell length
     const real_t celllength = re  ;
@@ -83,7 +85,7 @@ int main(int argc, char **argv){
 
     // Number of particles
     const u_int numparticles = p.num_particles ;
-    real_t d = RestDistance(numparticles,xmax*ymax*zmax);
+
     printf("Rest distance is %f\n",d);
     // Number of Cell
     const u_int numcells = numcellx * numcellx * numcellx ;
@@ -186,7 +188,7 @@ int main(int argc, char **argv){
 
         CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
                                               particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,density.devicePtr,
-                                              position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+                                              position.devicePtr,numparticles,celllength,numcellx,re,nu,sigma) ;
 
         //BoundarySweep<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,position.devicePtr,d,numparticles,re,const_args[1],1);
         BoundarySweepSD<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,position.devicePtr,mass.devicePtr,\
@@ -222,7 +224,7 @@ int main(int argc, char **argv){
 
             CalculateForce<<<blocks_p,threads_p>>>(velocity.devicePtr,forcenew.devicePtr,cell_list.devicePtr,
                           particle_list.devicePtr,mass.devicePtr,pressure.devicePtr,
-                          density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu) ;
+                          density.devicePtr,position.devicePtr,numparticles,celllength,numcellx,re,nu,sigma) ;
            // BoundarySweep<<<blocks_p,threads_p>>>   (forcenew.devicePtr,density.devicePtr,mass.devicePtr,timestep_length,
                       //  position.devicePtr,d,numparticles,re,const_args[0],1);
             BoundarySweepSD<<<blocks_p,threads_p>>>(forcenew.devicePtr,density.devicePtr,position.devicePtr,mass.devicePtr,\

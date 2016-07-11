@@ -85,6 +85,29 @@ __device__ real_t deltaWvis(const real_t re, const real_t r){
 	return c * rij ;
 }
 
+//Delta function for surface tension
+__device__ void deltaWsurf(const real_t re, const real_t *relvec, const real_t rnorm, real_t *normal){
+    const real_t c = re*re-rnorm*rnorm;
+    const real_t K = 315.0*pow(c,3)/(64.0*pi*pow(re,9));
+    for(int i=0;i<3;i++){
+        normal[i] = -6.0*K*c*c*relvec[i];
+    }
+
+    const real_t norm_normal = norm(normal);
+    for(int i=0;i<3;i++){
+        if(norm_normal != 0)
+            normal[i] = normal[i]/norm_normal;
+    }
+}
+
+//delta sqr function for surface tension
+__device__ real_t deltaWsqr(const real_t re, const real_t rnorm){
+    const real_t c  = re*re-rnorm*rnorm;
+    const real_t K = 315.0*pow(c,3)/(64.0*pi*pow(re,9));
+
+    return (-18.0*K*c*c+24.0*K*rnorm*rnorm*c);
+}
+
 // Initialize the Particle List
 __global__ void InitializePartList(int *Particle_list, const u_int numparticles){
 
@@ -285,16 +308,17 @@ __global__ void CalculateForce(const real_t *velocity,
 								const real_t cell_length,
 								const u_int numcellx,
 								const real_t re,
-								const real_t nu){
+                                const real_t nu,
+                                const real_t sigma){
 
 	u_int pid = GetGlobalId() ;
 
 	if (pid  < num_particles) {
 
 		u_int vpid = pid * 3 ;
-		force[vpid] = 0.0 ;
+        force[vpid] = 0.0;
 		force[vpid+1] = 0.0 ;
-		force[vpid+2] = 0.0 ;
+        force[vpid+2] = 0.0 ;
 
 		real_t pos[3] = {0} ;
 		pos[0] =  position[vpid] ;
@@ -341,9 +365,18 @@ __global__ void CalculateForce(const real_t *velocity,
 				// Add contribution due to viscosity
 				real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
 
-				force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
-				force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
-				force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
+                force[vpid] += constantvis * (velocity[nvpid] - velocity[vpid]) ;
+                force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
+                force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
+
+                //Add contribution because of surface tension
+                /*real_t normalsurf[3] = {0.0};
+                deltaWsurf(re,relvec,rnorm,normalsurf);
+                real_t constantsurf = -1.0*sigma*mass[head_id]*deltaWsqr(re,rnorm)/density[head_id];
+                for(int i=0;i<3;i++){
+                   // force[vpid+i] += constantsurf*normalsurf[i];
+                }*/
+
 
 			}
 		}
@@ -373,17 +406,25 @@ __global__ void CalculateForce(const real_t *velocity,
                     if (rnorm <= re){
 
                         // Add contribution to the forces
-						real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
-                        force[vpid]     +=  -constant * relvec[0] ;
+                        real_t constant =  mass[head_id] * ( (pressure[pid] + pressure[head_id]) / (2 * density[head_id])) * deltaW(re,rnorm) ;
+                        force[vpid]   +=  -constant * relvec[0] ;
                         force[vpid+1] +=  -constant * relvec[1] ;
                         force[vpid+2] +=  -constant * relvec[2] ;
 
 						// Add contribution due to viscosity
-						real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
+                        real_t constantvis = nu * mass[head_id] * deltaWvis(re,rnorm) / density[head_id] ;
 
-                        force[vpid]     += constantvis * (velocity[nvpid] - velocity[vpid]) ;
+                        force[vpid]   += constantvis * (velocity[nvpid] - velocity[vpid]) ;
                         force[vpid+1] += constantvis * (velocity[nvpid+1] - velocity[vpid+1]) ;
                         force[vpid+2] += constantvis * (velocity[nvpid+2] - velocity[vpid+2]) ;
+
+                        //Add contribution because of surface tension
+                        /*real_t normalsurf[3] = {0.0};
+                        deltaWsurf(re,relvec,rnorm,normalsurf);
+                        real_t constantsurf = -1.0*sigma*mass[head_id]*deltaWsqr(re,rnorm)/density[head_id];
+                        for(int i=0;i<3;i++){
+                           // force[vpid+i] += constantsurf*normalsurf[i];
+                        }*/
                     }
                 }
             }
@@ -429,9 +470,13 @@ __global__ void BoundarySweepSD(real_t *force, real_t * density, const real_t* p
             dcont = static_cast<int>(density_boundary[i])*(0.5*(re-riw[i])*(2.0*re*re-riw[i]*riw[i]-re*riw[i])/(re*re*re))*W(re,riw[i]);
             density[pid] += dcont;
 
-            ftemp =  pressure_boundary[i]*(fcont*stiffness*(d-riw[i])-damping*velocity[i]);
+            if(velocity[vidxp+i]*fcont < 0)
+                ftemp =  pressure_boundary[i]*(fcont*stiffness*(d-riw[i])-damping*velocity[i]);
+                //ftemp = pressure_boundary[i]*fcont*mass[pid]*velocity[vidxp+i]*velocity[vidxp+i]/riw[i];
+            else
+                ftemp = 0.0;
             force[vidxp+i] += ftemp;
-            if(ftemp != 0.0) printf("%f\n",ftemp);
+            if(ftemp != 0.0) printf(" Boundary force is %f %f %f\n",force[vidxp],force[vidxp+1],force[vidxp+2]);
         }
     }
 }

@@ -37,7 +37,7 @@ public:
 
 	~Droplet() ;
 
-	void MakeBubbleAndTank(const real_t domlen) ;
+    void MakeBubbleAndTank() ;
 
 };
 
@@ -53,32 +53,46 @@ Droplet::~Droplet(){
 
 }
 
-void Droplet::MakeBubbleAndTank(const real_t domlen){
+void Droplet::MakeBubbleAndTank(){
 
 	std::ofstream out ;
 	out.open("bubbleWithTank.dat") ;
 
-	real_t mass  = 1;
-	real_t vel = 0.0 ;
-    real_t offset =50.0 ;
+    real_t mass  = 1.0;
+    real_t vel = -10.0 ;
+    real_t offset1 = 0.5 ;
 
     u_int numpxy = tank_particles / tank_height ;
 
-    real_t dist = (domlen)/(std::sqrt(numpxy)-1) ;
+    real_t dist = 0.5;
+
     std::cout<<"The distance between particles"<<dist<<std::endl  ;
     u_int numpx = std::sqrt(numpxy) ;
-    out<<bubble_particles+tank_particles<<std::endl;
+    std::cout<<"tank particles "<<tank_particles<<std::endl;
+    out<<12500<<std::endl;
 
     u_int iter = 0 ; 
 	// For the tank
-    for (u_int varz = 0; varz < tank_height; ++varz) {
-        for (u_int vary = 0; vary < numpx; ++vary) {
-            for (u_int varx = 0; varx < numpx; ++varx) {
-                out<<mass<<" "<<varx * dist + offset<<" "<<vary * dist + offset<<" "<<varz * dist + offset<<" "<<"0"<<" "<<"0"<<" "<<"-10.0"<<std::endl ;
+    /*for (u_int varz = 0; varz < 5; ++varz) {
+        for (u_int vary = 0; vary < 50; ++vary) {
+            for (u_int varx = 0; varx < 50; ++varx) {
+                out<<mass<<" "<<varx * dist + offset1<<" "<<vary * dist + offset1<<" "<<varz * dist + offset1<<" "<<"0"<<" "<<"0"<<" "<<"0"<<std::endl ;
                 ++iter ; 
 			}
 		}
-	}
+    }*/
+
+    iter = 0;
+    for (u_int varz = 0; varz < 5; ++varz) {
+        for (u_int vary = 0; vary < 50; ++vary) {
+            for (u_int varx = 0; varx < 50; ++varx) {
+                out<<mass<<" "<<varx * dist + 10.0<<" "<<vary * dist + 10.0<<" "<<varz * dist + 10.0<<" "<<"-5"<<" "<<"0"<<" "<<"0"<<std::endl ;
+                ++iter ;
+            }
+        }
+    }
+
+
     /*
 	iter = 0 ; 
 	// for the bubble
